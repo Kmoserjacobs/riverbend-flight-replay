@@ -1,0 +1,16 @@
+Riverbend flight replay — October 6, 2026
+
+The viewer streams B1 and Power directly from the existing Luma captures.
+The flight positions and gimbal angles were recovered from the supplied DJI recordings.
+Use Explore, Follow the drone, or Drone camera; drag the timeline to inspect a position.
+
+The GPS tracks are recorded telemetry. The placement of each splat is an estimate
+from video landmarks, and should be checked against site dimensions or survey control.
+Power has a provisional single-view placement, so scale and vertical position
+remain uncertain. The viewer provides alignment adjustments and an export.
+Relative altitude is measured against each recording's takeoff datum.
+Recording start/end are not takeoff/landing. The viewer is a visualization, not a flight mission.
+
+Both hosted model URLs must remain accessible for this viewer to load.
+The webpage includes small reference frames; it does not include the source video
+files or the large PLY exports.
