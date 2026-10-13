@@ -3,6 +3,12 @@ Riverbend flight replay — October 6, 2026
 The viewer streams B1 and Power directly from the existing Luma captures.
 The flight positions and gimbal angles were recovered from the supplied DJI recordings.
 Use Explore, Follow the drone, or Drone camera; drag the timeline to inspect a position.
+The recorded video plays in sync with the flight position. Either set of playback
+controls can play, pause or seek both; speed changes apply to both. Compact 720p
+H.264 playback copies are included, derived from the DJI recording proxies.
+The drone icon stays readable from above or below, and the Flight line checkbox
+works in all camera modes. Drone camera also shows an overhead route inset when
+the checkbox is enabled, since the route may be outside the camera's field of view.
 
 The GPS tracks are recorded telemetry. The placement of each splat is an estimate
 from video landmarks, and should be checked against site dimensions or survey control.
@@ -12,5 +18,5 @@ Relative altitude is measured against each recording's takeoff datum.
 Recording start/end are not takeoff/landing. The viewer is a visualization, not a flight mission.
 
 Both hosted model URLs must remain accessible for this viewer to load.
-The webpage includes small reference frames; it does not include the source video
-files or the large PLY exports.
+The webpage includes small fallback reference frames and compact playback videos.
+The full-quality source recordings and large PLY exports are stored in Alluvial.
