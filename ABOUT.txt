@@ -12,9 +12,21 @@ different exports: visual track display and repeat-flight mission programming.
 The recorded video plays in sync with the flight position. Either set of playback
 controls can play, pause or seek both; speed changes apply to both. Compact 720p
 H.264 playback copies are included, derived from the DJI recording proxies.
-The drone icon stays readable from above or below, and the Flight line checkbox
-works in all camera modes. Drone camera also shows an overhead route inset when
-the checkbox is enabled, since the route may be outside the camera's field of view.
+Flight line and the compact display buttons activate or deactivate each feature.
+Route and flown-line colors and pixel thickness are adjustable. A small 3D drone
+and camera pyramid show the aircraft and recorded viewing direction in Explore
+and Follow. The drone model uses an enlarged display size for readability.
+Drone camera also shows an overhead route inset while Flight line is active.
+Play and pause use symbols with accessible labels.
+
+Ground projection and view highlighting are optional and off by default.
+The full PLY exports are processed locally to create a roughly 200 KB combined
+height surface; the browser continues streaming the existing hosted Luma models
+and does not download another full splat. Ground rays use this approximate
+surface. Corners beyond reconstructed ground are left open. The subtle adjustable
+highlight colors the splat within the recorded camera view; it shows camera
+coverage, not optical focus or survey accuracy. Display settings persist locally
+and are included in copied replay links.
 
 The GPS tracks are recorded telemetry. The placement of each splat is an estimate
 from video landmarks, and should be checked against site dimensions or survey control.
