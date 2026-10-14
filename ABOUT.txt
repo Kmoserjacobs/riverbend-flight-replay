@@ -12,8 +12,11 @@ the checkbox is enabled, since the route may be outside the camera's field of vi
 
 The GPS tracks are recorded telemetry. The placement of each splat is an estimate
 from video landmarks, and should be checked against site dimensions or survey control.
-Power has a provisional single-view placement, so scale and vertical position
-remain uncertain. The viewer provides alignment adjustments and an export.
+Power placement is fitted from image camera centers across 72 views of the flight.
+Its replay camera uses frame-level recorded angles plus image-derived heading,
+tilt, roll and timing calibration. The GPS route and mission files are unchanged.
+The fit was checked at intermediate times against the source video. The viewer
+provides alignment adjustments and an export.
 Relative altitude is measured against each recording's takeoff datum.
 Recording start/end are not takeoff/landing. The viewer is a visualization, not a flight mission.
 
