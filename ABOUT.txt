@@ -19,6 +19,15 @@ and Follow. The drone model uses an enlarged display size for readability.
 Drone camera also shows an overhead route inset while Flight line is active.
 Play and pause use symbols with accessible labels.
 
+Fullscreen views
+Use the fullscreen icon on the splat or recorded video. The opposite view stays
+interactive in a lower-right inset. Its fullscreen icon swaps the main view.
+Explore, Follow drone, Drone camera and Flight line remain available above the
+fullscreen or inset splat. The same model, renderer and video remain loaded, so
+playback time, camera position, alignment and display settings are preserved.
+Exit with the main view fullscreen icon or Escape. If native fullscreen is
+unavailable, the viewer expands within the page instead.
+
 Ground projection and view highlighting are optional and off by default.
 The full PLY exports are processed locally to create a roughly 200 KB combined
 height surface; the browser continues streaming the existing hosted Luma models
