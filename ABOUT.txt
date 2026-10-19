@@ -3,7 +3,9 @@ Riverbend flight replay — October 6, 2026
 The viewer streams B1 and Power directly from the existing Luma captures.
 The flight positions and gimbal angles were recovered from the supplied DJI recordings.
 Use Explore, Follow the drone, or Drone camera; drag the timeline to inspect a position.
-The view modes are buttons with a visible selected state. Drone camera uses the
+The view modes use icon buttons in the splat header, with tooltips and a visible
+selected state. Colors, line width, and display options share this compact header.
+Drone camera uses the
 recording's 16:9 proportions on desktop and mobile.
 Download track KMZ exports the selected area's recorded route for Google Earth,
 with its one-second telemetry CSV inside the archive. Download mission KMZ exports
