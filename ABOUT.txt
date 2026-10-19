@@ -3,6 +3,10 @@ Riverbend flight replay — October 6, 2026
 The viewer streams B1 and Power directly from the existing Luma captures.
 The flight positions and gimbal angles were recovered from the supplied DJI recordings.
 Use Explore, Follow the drone, or Drone camera; drag the timeline to inspect a position.
+Click or tap the displayed flight line to jump the recorded video and animation
+to that point. This also works in fullscreen and the splat inset. Hovering shows
+the target time; dragging or pinching still moves the view without seeking.
+Hidden flight lines cannot be selected. Playback continues if already playing.
 The view modes use icon buttons in the splat header, with tooltips and a visible
 selected state. Colors, line width, and display options share this compact header.
 Drone camera uses the

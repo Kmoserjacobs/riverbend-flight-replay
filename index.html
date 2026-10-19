@@ -102,6 +102,7 @@
 }
 
 </style>
+<style>.route-seek-hint{position:absolute;z-index:5;pointer-events:none;white-space:nowrap;padding:4px 7px;border:1px solid #5e8da3;border-radius:5px;background:#10202deb;color:#eef8ff;font-size:11px;line-height:1.4}.route-seek-hint[hidden]{display:none}</style>
 </head><body>
 <header><div><h1>Riverbend · Flight replay</h1><p>October 6, 2026 · Recorded DJI routes over the Gaussian splats</p></div><div class="tabs" role="group" aria-label="Area"><button id="b1" type="button" aria-pressed="true">B1</button><button id="power" type="button" aria-pressed="false">Power</button></div></header>
 <main>
@@ -135,8 +136,8 @@ const params=new URLSearchParams(location.hash.slice(1));if(areas.includes(param
 if(['orbit','follow','camera'].includes(params.get('view')))mode=params.get('view');
 try{const saved=JSON.parse(params.get('cal')||'null');if(saved&&Object.values(saved).every(Number.isFinite))Object.assign(calibrations[active],saved)}catch{}
 elapsed=Math.max(0,Number(params.get('t'))||0);syncViewButtons();
-function syncViewButtons(){$('caption').textContent=mode==='orbit'?'Drag to orbit · scroll to zoom':mode==='follow'?'Following the recorded drone position':'Recorded drone camera · estimated model alignment';for(const button of document.querySelectorAll('[data-view]'))button.setAttribute('aria-pressed',String(button.dataset.view===mode));$('stage').classList.toggle('camera-view',mode==='camera');}
-function setView(view){mode=view;syncViewButtons();setFov();$('caption').textContent=mode==='orbit'?'Drag to orbit · scroll to zoom':mode==='follow'?'Following the recorded drone position':'Recorded drone camera · estimated model alignment';if(mode==='orbit')frameRoute();update();}
+function syncViewButtons(){$('caption').textContent=mode==='orbit'?'Click flight line to seek · drag to orbit · scroll to zoom':mode==='follow'?'Following the recorded drone position':'Recorded drone camera · estimated model alignment';for(const button of document.querySelectorAll('[data-view]'))button.setAttribute('aria-pressed',String(button.dataset.view===mode));$('stage').classList.toggle('camera-view',mode==='camera');}
+function setView(view){mode=view;syncViewButtons();setFov();$('caption').textContent=mode==='orbit'?'Click flight line to seek · drag to orbit · scroll to zoom':mode==='follow'?'Following the recorded drone position':'Recorded drone camera · estimated model alignment';if(mode==='orbit')frameRoute();update();}
 function format(t){t=Math.max(0,Math.floor(t));return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`}
 function flight(){return DATA.flights[active]}
 function pointAt(t){const pts=flight().points;let i=Math.min(Math.floor(t),pts.length-2);if(i<0)i=0;while(i>0&&pts[i].t>t)i--;while(i<pts.length-2&&pts[i+1].t<t)i++;const a=pts[i],b=pts[i+1],f=Math.max(0,Math.min(1,(t-a.t)/(b.t-a.t)));const mix=(x,y)=>x+f*(y-x);const yaw=a.yaw+f*((b.yaw-a.yaw+540)%360-180);return {position:a.position.map((x,j)=>mix(x,b.position[j])),yaw,pitch:mix(a.pitch,b.pitch),alt:mix(a.alt,b.alt),speed:mix(a.speed,b.speed),index:i};}
@@ -256,7 +257,7 @@ $('timeline').value=elapsed;$('time').textContent=`${format(elapsed)} / ${format
 // Include the exports in the page so downloads also work in the single-file viewer.
 const kmzDownloads={};
 function kmzURL(kind){const key=active+':'+kind;if(kmzDownloads[key])return kmzDownloads[key];const data=flight()[kind+'_kmz_base64'];if(!data)return flight()[kind+'_kmz'];const bytes=Uint8Array.from(atob(data),char=>char.charCodeAt(0));return kmzDownloads[key]=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.google-earth.kmz'}));}
-async function choose(area,preserveTime=false){setPlaying(false);const currentToken=++token;active=area;loaded=false;$('play').disabled=true;elapsed=preserveTime?Math.min(elapsed,flight().duration):0;$('load').hidden=false;$('load').textContent=`Loading ${flight().label} from Luma…`;$('downloadTrack').href=kmzURL('track');$('downloadTrack').download=flight().track_kmz.split('/').pop();$('downloadMission').hidden=!flight().mission_kmz;$('downloadNote').textContent='Track KMZ opens in Google Earth.'+(flight().mission_kmz?' '+DATA.project.mission_note:'');if(flight().mission_kmz){$('downloadMission').href=kmzURL('mission');$('downloadMission').download=flight().mission_kmz.split('/').pop();}
+async function choose(area,preserveTime=false){cancelRouteGesture();setPlaying(false);const currentToken=++token;active=area;loaded=false;$('play').disabled=true;elapsed=preserveTime?Math.min(elapsed,flight().duration):0;$('load').hidden=false;$('load').textContent=`Loading ${flight().label} from Luma…`;$('downloadTrack').href=kmzURL('track');$('downloadTrack').download=flight().track_kmz.split('/').pop();$('downloadMission').hidden=!flight().mission_kmz;$('downloadNote').textContent='Track KMZ opens in Google Earth.'+(flight().mission_kmz?' '+DATA.project.mission_note:'');if(flight().mission_kmz){$('downloadMission').href=kmzURL('mission');$('downloadMission').download=flight().mission_kmz.split('/').pop();}
 for(const name of areas)$(name).setAttribute('aria-pressed',String(active===name));$('timeline').max=flight().duration;$('distance').textContent=`${(flight().distance/1609.344).toFixed(2)} miles recorded`;$('lumaLink').href=flight().capture;$('alignmentDetail').textContent=active==='power'?'Power model placement and replay camera calibration are estimated from views across the recorded video. The GPS route is recorded.':'Model placement is estimated from video landmarks. The GPS route and camera angles come from the recordings.';
 if(modelGroup)scene.remove(modelGroup);modelGroup=new THREE.Group();scene.add(modelGroup);buildRoute();applyAlignment();frameRoute();readCalibration();resize();update();loadVideo();
 if(modelCache[area]){splat=modelCache[area];modelGroup.add(splat);ready(currentToken);return}
@@ -337,6 +338,66 @@ function setupDualFullscreen({root,modelPanel,videoPanel,onLayout=()=>{}}) {
  return {toggle,exit,getState:()=>({primary,fallback,native:nativeElement()===root})};
 }
 
+// Pick the existing screen-width Line2, using the same camera and viewport as
+// its renderer. No model raycast, extra renderer, or full splat download.
+const routeRaycaster=new THREE.Raycaster(),routePointer=new THREE.Vector2();
+const routeStart=new THREE.Vector3(),routeEnd=new THREE.Vector3(),routeDelta=new THREE.Vector3(),routeProjected=new THREE.Vector3();
+const routePointers=new Set();let routeGesture=null,routeHoverFrame=false,routeHoverPointer=null,pathClickCount=0,lastPathSeekTime=null;
+const routeHint=document.createElement('div');routeHint.className='route-seek-hint';routeHint.hidden=true;$('stage').append(routeHint);
+function hideRouteHint(){routeHint.hidden=true;routeHoverPointer=null;canvas.style.cursor=''}
+function pickFlightLine(clientX,clientY,pointerType='mouse'){
+ if(!loaded||!overlaySettings.line||!route?.visible)return null;
+ const r=canvas.getBoundingClientRect();if(!r.width||!r.height||clientX<r.left||clientX>r.right||clientY<r.top||clientY>r.bottom)return null;
+ camera.updateMatrixWorld();route.updateMatrixWorld();
+ routePointer.set((clientX-r.left)/r.width*2-1,1-(clientY-r.top)/r.height*2);
+ routeRaycaster.params.Line2={threshold:(pointerType==='touch'?16:8)*2};routeRaycaster.setFromCamera(routePointer,camera);
+ let best=null;
+ for(const hit of routeRaycaster.intersectObject(route,false)){
+  const index=hit.faceIndex,a=flight().points[index],b=flight().points[index+1];if(!a||!b)continue;
+  routeStart.fromArray(a.position).applyMatrix4(route.matrixWorld);routeEnd.fromArray(b.position).applyMatrix4(route.matrixWorld);routeDelta.subVectors(routeEnd,routeStart);
+  const length=routeDelta.lengthSq(),fraction=length?THREE.MathUtils.clamp(routeProjected.subVectors(hit.pointOnLine,routeStart).dot(routeDelta)/length,0,1):0;
+  routeProjected.copy(hit.pointOnLine).project(camera);if(routeProjected.z< -1||routeProjected.z>1)continue;
+  const distance=Math.hypot((routeProjected.x+1)*r.width/2-(clientX-r.left),(1-routeProjected.y)*r.height/2-(clientY-r.top)),time=a.t+fraction*(b.t-a.t);
+  if(!best||distance<best.distance-.3||(Math.abs(distance-best.distance)<=.3&&Math.abs(time-elapsed)<Math.abs(best.time-elapsed)))best={time,index,distance};
+ }
+ return best;
+}
+function routeScreenPoints(){
+ camera.updateMatrixWorld();route?.updateMatrixWorld();const r=canvas.getBoundingClientRect();
+ return flight().points.map(p=>{routeProjected.fromArray(p.position);if(route)routeProjected.applyMatrix4(route.matrixWorld);routeProjected.project(camera);return {time:p.t,x:r.left+(routeProjected.x+1)*r.width/2,y:r.top+(1-routeProjected.y)*r.height/2,visible:routeProjected.z>=-1&&routeProjected.z<=1&&Math.abs(routeProjected.x)<=1&&Math.abs(routeProjected.y)<=1}});
+}
+canvas.addEventListener('pointerdown',e=>{
+ routePointers.add(e.pointerId);hideRouteHint();
+ if(e.button!==0||routePointers.size!==1){routeGesture=null;return}
+ routeGesture={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false,token,type:e.pointerType};
+},{capture:true});
+window.addEventListener('pointerdown',e=>{if(routeGesture&&e.pointerId!==routeGesture.id)routeGesture=null},{capture:true});
+window.addEventListener('pointermove',e=>{
+ if(routeGesture&&e.pointerId===routeGesture.id&&Math.hypot(e.clientX-routeGesture.x,e.clientY-routeGesture.y)>(routeGesture.type==='touch'?8:5))routeGesture.moved=true;
+},{capture:true});
+canvas.addEventListener('pointermove',e=>{
+ if(routeGesture||e.buttons||e.pointerType==='touch'){hideRouteHint();return}
+ routeHoverPointer={x:e.clientX,y:e.clientY,type:e.pointerType};
+ if(routeHoverFrame)return;routeHoverFrame=true;
+ requestAnimationFrame(()=>{
+  routeHoverFrame=false;const pointer=routeHoverPointer;if(!pointer||routeGesture)return;
+  const hit=pickFlightLine(pointer.x,pointer.y,pointer.type);if(!hit){hideRouteHint();return}
+  const r=canvas.getBoundingClientRect();routeHint.textContent='Jump to '+format(hit.time);routeHint.hidden=false;
+  routeHint.style.left=Math.max(4,Math.min(r.width-routeHint.offsetWidth-5,pointer.x-r.left+12))+'px';
+  routeHint.style.top=Math.max(4,Math.min(r.height-routeHint.offsetHeight-5,pointer.y-r.top+12))+'px';canvas.style.cursor='pointer';
+ });
+});
+window.addEventListener('pointerup',e=>{
+ const gesture=routeGesture;routePointers.delete(e.pointerId);if(!gesture||gesture.id!==e.pointerId)return;routeGesture=null;hideRouteHint();
+ if(e.button!==0||gesture.moved||gesture.token!==token||Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>(gesture.type==='touch'?8:5))return;
+ const hit=pickFlightLine(e.clientX,e.clientY,gesture.type);if(!hit)return;
+ pathClickCount++;lastPathSeekTime=hit.time;seekTo(hit.time);
+},{capture:true});
+function cancelRouteGesture(){routeGesture=null;routePointers.clear();hideRouteHint()}
+canvas.addEventListener('pointercancel',cancelRouteGesture);window.addEventListener('blur',cancelRouteGesture);
+canvas.addEventListener('pointerleave',hideRouteHint);canvas.addEventListener('wheel',hideRouteHint,{passive:true});
+controls.addEventListener('change',hideRouteHint);window.addEventListener('resize',hideRouteHint);
+
 const fullViews=setupDualFullscreen({root:$('replayViews'),modelPanel:$('modelPanel'),videoPanel:$('videoPanel'),onLayout:()=>requestAnimationFrame(resize)});
-await choose(active,true);window.replayDebug={getState:()=>({alignmentRevision:'power-multiview-2026-10-13',uiRevision:'compact-splat-header-2026-10-19',active,elapsed,loaded,playing,mode,fullscreen:fullViews.getState(),cameraPosition:camera.position.toArray(),calibration:calibrations[active],videoTime:video.currentTime,videoReady:video.readyState,videoFailed,videoPaused:video.paused,pathVisible:route.visible,markerVisible:rig.visible,overlays:{...overlaySettings},lineWidth:route.material.linewidth,droneVisible:rig.visible,pyramidVisible:cameraPyramid.visible,groundProjectionVisible:groundRays.visible,groundHitCount,viewHighlightStrength:focusUniforms.strength.value,highlightAvailable}),setTime:seekTo,setOrbit:(position,target)=>{camera.position.fromArray(position);controls.target.fromArray(target);controls.update();updateDroneSize()}};
+await choose(active,true);window.replayDebug={getState:()=>({alignmentRevision:'power-multiview-2026-10-13',uiRevision:'compact-splat-header-2026-10-19',active,elapsed,loaded,playing,mode,pathClickCount,lastPathSeekTime,fullscreen:fullViews.getState(),cameraPosition:camera.position.toArray(),calibration:calibrations[active],videoTime:video.currentTime,videoReady:video.readyState,videoFailed,videoPaused:video.paused,pathVisible:route.visible,markerVisible:rig.visible,overlays:{...overlaySettings},lineWidth:route.material.linewidth,droneVisible:rig.visible,pyramidVisible:cameraPyramid.visible,groundProjectionVisible:groundRays.visible,groundHitCount,viewHighlightStrength:focusUniforms.strength.value,highlightAvailable}),getRouteScreen:routeScreenPoints,setTime:seekTo,setOrbit:(position,target)=>{camera.position.fromArray(position);controls.target.fromArray(target);controls.update();updateDroneSize()}};
 </script></body></html>
