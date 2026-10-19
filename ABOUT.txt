@@ -34,8 +34,8 @@ Ground projection and view highlighting are optional and off by default.
 The full PLY exports are processed locally to create a roughly 200 KB combined
 height surface; the browser continues streaming the existing hosted Luma models
 and does not download another full splat. Ground rays use this approximate
-surface. Corners beyond reconstructed ground are left open. The subtle adjustable
-highlight colors the splat within the recorded camera view; it shows camera
+surface. Corners beyond reconstructed ground are left open. The Highlight button
+cycles 25%, 50%, then off. It colors the splat within the recorded camera view; it shows camera
 coverage, not optical focus or survey accuracy. Display settings persist locally
 and are included in copied replay links.
 
